@@ -44,6 +44,14 @@ export function createServerResponse(): {
   const chunks: Buffer[] = [];
   let headersSent = false;
 
+  let resolveResponse: (value: NextResponse) => void;
+  let rejectResponse: (reason?: any) => void;
+
+  const responsePromise = new Promise<NextResponse>((resolve, reject) => {
+    resolveResponse = resolve;
+    rejectResponse = reject;
+  });
+
   const response: any = {
     statusCode: 200,
     statusMessage: "OK",
@@ -110,6 +118,28 @@ export function createServerResponse(): {
       }
       headersSent = true;
 
+      try {
+        const body =
+          chunks.length > 0
+            ? Buffer.concat(chunks).toString("utf-8")
+            : undefined;
+        const headerEntries: [string, string][] = [];
+        Object.entries(headers).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            value.forEach((v) => headerEntries.push([key, v]));
+          } else {
+            headerEntries.push([key, value]);
+          }
+        });
+        const nextResponse = new NextResponse(body, {
+          status: statusCode,
+          headers: new Headers(headerEntries),
+        });
+        resolveResponse(nextResponse);
+      } catch (error) {
+        rejectResponse(error);
+      }
+
       if (cb) {
         setImmediate(() => cb());
       }
@@ -148,22 +178,7 @@ export function createServerResponse(): {
     connection: null,
   };
 
-  const getResponse = async (): Promise<NextResponse> => {
-    const body =
-      chunks.length > 0 ? Buffer.concat(chunks).toString("utf-8") : undefined;
-    const headerEntries: [string, string][] = [];
-    Object.entries(headers).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((v) => headerEntries.push([key, v]));
-      } else {
-        headerEntries.push([key, value]);
-      }
-    });
-    return new NextResponse(body, {
-      status: statusCode,
-      headers: new Headers(headerEntries),
-    });
-  };
+  const getResponse = () => responsePromise;
 
   return { response: response as unknown as ServerResponse, getResponse };
 }
