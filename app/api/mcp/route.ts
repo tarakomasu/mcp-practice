@@ -349,27 +349,9 @@ export async function POST(req: NextRequest) {
         hasEmit: typeof (incomingMessage as any).emit === "function",
       });
 
-      // Test: Can we read the stream?
-      console.log("🧪 Testing stream read...");
-      try {
-        const chunks: string[] = [];
-        for await (const chunk of incomingMessage) {
-          chunks.push(chunk.toString());
-        }
-        const readData = chunks.join("");
-        console.log("✅ Stream read successful, data length:", readData.length);
-        console.log("📝 Stream data preview:", readData.substring(0, 100));
-      } catch (streamError) {
-        console.error("❌ Stream read test failed:", streamError);
-      }
-
-      // Stream has been consumed, recreate it for SDK
-      const incomingMessage2 = createIncomingMessage(req, body);
-      console.log("🔄 Recreated stream for SDK");
-
       console.log("📤 Calling transport.handleRequest...");
       try {
-        await transport.handleRequest(incomingMessage2, response);
+        await transport.handleRequest(incomingMessage, response);
         console.log("✅ transport.handleRequest completed");
       } catch (error) {
         console.error("❌ Error in transport.handleRequest:", {

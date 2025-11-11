@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { IncomingMessage, ServerResponse } from "http";
-import { Readable, PassThrough } from "stream";
+import { Readable, PassThrough, Duplex } from "stream";
+import { Socket } from "net";
 
 export function createIncomingMessage(
   req: NextRequest,
