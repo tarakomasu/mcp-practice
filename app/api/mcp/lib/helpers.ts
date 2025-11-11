@@ -17,24 +17,29 @@ export function createIncomingMessage(
   // This ensures SDK can use for-await-of to read the stream
   const incomingMessage = Readable.from([bodyString]) as IncomingMessage;
 
-  // Add required HTTP properties
-  Object.assign(incomingMessage, {
-    headers,
-    method: req.method,
-    url: req.url,
-    httpVersion: "1.1",
-    httpVersionMajor: 1,
-    httpVersionMinor: 1,
-    aborted: false,
-    complete: true,
-    readable: true,
+  // Use defineProperty to avoid overwriting EventEmitter methods (on, once, emit)
+  const props = {
+    headers: { value: headers, writable: false, enumerable: true },
+    method: { value: req.method, writable: false, enumerable: true },
+    url: { value: req.url, writable: false, enumerable: true },
+    httpVersion: { value: "1.1", writable: false, enumerable: true },
+    httpVersionMajor: { value: 1, writable: false, enumerable: true },
+    httpVersionMinor: { value: 1, writable: false, enumerable: true },
+    aborted: { value: false, writable: true, enumerable: true },
+    complete: { value: true, writable: false, enumerable: true },
     socket: {
-      remoteAddress: "127.0.0.1",
-      remotePort: 0,
-      encrypted: false,
+      value: {
+        remoteAddress: "127.0.0.1",
+        remotePort: 0,
+        encrypted: false,
+      },
+      writable: false,
+      enumerable: true,
     },
-    connection: null,
-  });
+    connection: { value: null, writable: true, enumerable: true },
+  };
+
+  Object.defineProperties(incomingMessage, props);
 
   return incomingMessage;
 }

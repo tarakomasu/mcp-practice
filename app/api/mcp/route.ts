@@ -344,6 +344,9 @@ export async function POST(req: NextRequest) {
         method: incomingMessage.method,
         hasAsyncIterator:
           typeof (incomingMessage as any)[Symbol.asyncIterator] === "function",
+        hasOn: typeof incomingMessage.on === "function",
+        hasOnce: typeof incomingMessage.once === "function",
+        hasEmit: typeof (incomingMessage as any).emit === "function",
       });
 
       console.log("📤 Calling transport.handleRequest...");
