@@ -346,9 +346,19 @@ export async function POST(req: NextRequest) {
       const nextResponse = await getResponse();
       console.log(`📋 Response status: ${nextResponse.status}`);
 
+      // レスポンスボディをログ出力
+      const responseBody = await nextResponse.text();
+      console.log(`📄 Response body: ${responseBody}`);
+
+      // 新しいレスポンスを作成（bodyは一度しか読めないため）
+      const finalResponse = new NextResponse(responseBody, {
+        status: nextResponse.status,
+        headers: nextResponse.headers,
+      });
+
       // CORSヘッダーを追加して返す
       console.log("🚀 Sending response with CORS headers");
-      return setCorsHeaders(nextResponse);
+      return setCorsHeaders(finalResponse);
     }
 
     /**
@@ -444,9 +454,17 @@ export async function POST(req: NextRequest) {
     await transport.handleRequest(incomingMessage, response, body);
 
     const nextResponse = await getResponse();
+    const responseBody = await nextResponse.text();
     console.log(`✅ Request processed successfully`);
+    console.log(`📋 Response status: ${nextResponse.status}`);
+    console.log(`📄 Response body: ${responseBody}`);
 
-    return setCorsHeaders(nextResponse);
+    const finalResponse = new NextResponse(responseBody, {
+      status: nextResponse.status,
+      headers: nextResponse.headers,
+    });
+
+    return setCorsHeaders(finalResponse);
   } catch (error) {
     /**
      * エラーハンドリング
