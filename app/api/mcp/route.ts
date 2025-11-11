@@ -529,24 +529,35 @@ export async function GET(req: NextRequest) {
     }
 
     /**
-     * ケース2: セッションIDがない、または無効
+     * ケース2: セッションIDはあるが、無効
+     */
+    if (sessionId) {
+      console.log(`⚠️ Health check: Session not found for ID: ${sessionId}`);
+      const response = NextResponse.json(
+        {
+          status: "error",
+          message: "Session not found",
+        },
+        { status: 404 }
+      );
+      return setCorsHeaders(response);
+    }
+
+    /**
+     * ケース3: セッションIDがない（通常のヘルスチェック）
      *
      * レスポンス:
-     * - status: "error"
-     * - message: エラーメッセージ
-     * - ステータス: 404（見つからない）または 400（不正なリクエスト）
+     * - status: "ok"
+     * - message: サーバーは稼働しているがセッションはない旨を通知
+     * - ステータス: 200
      */
-    console.log(`❌ Health check failed:`, {
-      sessionId: sessionId || "(none)",
-      reason: sessionId ? "Session not found" : "No session ID provided",
-    });
-
+    console.log("✅ Health check passed (no session ID provided)");
     const response = NextResponse.json(
       {
-        status: "error",
-        message: sessionId ? "Session not found" : "No session ID provided",
+        status: "ok",
+        message: "Server is running. No session provided.",
       },
-      { status: sessionId ? 404 : 400 }
+      { status: 200 }
     );
     return setCorsHeaders(response);
   } catch (error) {
