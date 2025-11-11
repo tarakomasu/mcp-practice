@@ -334,15 +334,20 @@ export async function POST(req: NextRequest) {
        * 3. MCPサーバーにディスパッチ
        * 4. レスポンスをNode.js形式で書き込む
        */
+      console.log("⚙️  Creating request/response objects...");
       const incomingMessage = createIncomingMessage(req, body);
       const { response, getResponse } = createServerResponse();
 
+      console.log("📤 Calling transport.handleRequest...");
       await transport.handleRequest(incomingMessage, response, body);
+      console.log("✅ transport.handleRequest completed");
 
-      // Node.jsレスポンスをNext.jsレスポンスに変換
+      console.log("🔄 Converting to Next.js response...");
       const nextResponse = await getResponse();
+      console.log(`📋 Response status: ${nextResponse.status}`);
 
       // CORSヘッダーを追加して返す
+      console.log("🚀 Sending response with CORS headers");
       return setCorsHeaders(nextResponse);
     }
 
