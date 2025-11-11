@@ -11,12 +11,18 @@ export function createIncomingMessage(
     headers[key] = value;
   });
 
+  const bodyString = body ? JSON.stringify(body) : "";
+  const bodyBuffer = Buffer.from(bodyString, "utf-8");
+
+  let pushed = false;
+
   const incomingMessage = new Readable({
     read() {
-      if (body) {
-        this.push(JSON.stringify(body));
+      if (!pushed) {
+        this.push(bodyBuffer);
+        this.push(null);
+        pushed = true;
       }
-      this.push(null);
     },
   }) as IncomingMessage;
 
@@ -28,8 +34,12 @@ export function createIncomingMessage(
     httpVersionMajor: 1,
     httpVersionMinor: 1,
     aborted: false,
-    complete: false,
+    complete: true,
     readable: true,
+    socket: {
+      remoteAddress: "127.0.0.1",
+      remotePort: 0,
+    },
   });
 
   return incomingMessage;

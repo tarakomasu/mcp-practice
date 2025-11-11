@@ -339,7 +339,7 @@ export async function POST(req: NextRequest) {
       const { response, getResponse } = createServerResponse();
 
       console.log("📤 Calling transport.handleRequest...");
-      await transport.handleRequest(incomingMessage, response, body);
+      await transport.handleRequest(incomingMessage, response);
       console.log("✅ transport.handleRequest completed");
 
       console.log("🔄 Converting to Next.js response...");
@@ -451,7 +451,7 @@ export async function POST(req: NextRequest) {
     const incomingMessage = createIncomingMessage(req, body);
     const { response, getResponse } = createServerResponse();
 
-    await transport.handleRequest(incomingMessage, response, body);
+    await transport.handleRequest(incomingMessage, response);
 
     const nextResponse = await getResponse();
     const responseBody = await nextResponse.text();
