@@ -12,47 +12,45 @@ export function createIncomingMessage(
   });
 
   const bodyString = body ? JSON.stringify(body) : "";
+  const bodyBuffer = Buffer.from(bodyString, "utf-8");
 
-  // Use PassThrough stream for proper event-based reading
-  // This ensures SDK can use both on('data') events and async iteration
-  const stream = new PassThrough();
+  let pushed = false;
 
-  // Write the body and close the stream immediately
-  stream.write(bodyString);
-  stream.end();
-
-  const incomingMessage = stream as unknown as IncomingMessage;
-
-  // Use defineProperty to avoid overwriting EventEmitter methods (on, once, emit)
-  const props = {
-    headers: { value: headers, writable: false, enumerable: true },
-    method: { value: req.method, writable: false, enumerable: true },
-    url: { value: req.url, writable: false, enumerable: true },
-    httpVersion: { value: "1.1", writable: false, enumerable: true },
-    httpVersionMajor: { value: 1, writable: false, enumerable: true },
-    httpVersionMinor: { value: 1, writable: false, enumerable: true },
-    aborted: { value: false, writable: true, enumerable: true },
-    complete: { value: false, writable: true, enumerable: true },
-    socket: {
-      value: {
-        remoteAddress: "127.0.0.1",
-        remotePort: 0,
-        encrypted: false,
-      },
-      writable: false,
-      enumerable: true,
+  // Create a custom Readable stream that pushes data when requested
+  const stream = new Readable({
+    read() {
+      if (!pushed) {
+        this.push(bodyBuffer);
+        this.push(null); // Signal end of stream
+        pushed = true;
+      }
     },
-    connection: { value: null, writable: true, enumerable: true },
-  };
+  });
 
-  Object.defineProperties(incomingMessage, props);
+  const incomingMessage = stream as any;
+
+  // Set HTTP properties directly without overwriting stream methods
+  incomingMessage.headers = headers;
+  incomingMessage.method = req.method;
+  incomingMessage.url = req.url;
+  incomingMessage.httpVersion = "1.1";
+  incomingMessage.httpVersionMajor = 1;
+  incomingMessage.httpVersionMinor = 1;
+  incomingMessage.aborted = false;
+  incomingMessage.complete = false;
+  incomingMessage.socket = {
+    remoteAddress: "127.0.0.1",
+    remotePort: 0,
+    encrypted: false,
+  };
+  incomingMessage.connection = null;
 
   // Mark as complete when stream ends
   stream.on("end", () => {
-    (incomingMessage as any).complete = true;
+    incomingMessage.complete = true;
   });
 
-  return incomingMessage;
+  return incomingMessage as IncomingMessage;
 }
 
 export function createServerResponse(): {
