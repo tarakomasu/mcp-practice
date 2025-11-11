@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { IncomingMessage, ServerResponse } from "http";
-import { Readable } from "stream";
+import { Readable, PassThrough } from "stream";
 
 export function createIncomingMessage(
   req: NextRequest,
@@ -13,9 +13,15 @@ export function createIncomingMessage(
 
   const bodyString = body ? JSON.stringify(body) : "";
 
-  // Use Readable.from() to create a proper async iterable stream
-  // This ensures SDK can use for-await-of to read the stream
-  const incomingMessage = Readable.from([bodyString]) as IncomingMessage;
+  // Use PassThrough stream for proper event-based reading
+  // This ensures SDK can use both on('data') events and async iteration
+  const stream = new PassThrough();
+
+  // Write the body and close the stream immediately
+  stream.write(bodyString);
+  stream.end();
+
+  const incomingMessage = stream as unknown as IncomingMessage;
 
   // Use defineProperty to avoid overwriting EventEmitter methods (on, once, emit)
   const props = {
@@ -26,7 +32,7 @@ export function createIncomingMessage(
     httpVersionMajor: { value: 1, writable: false, enumerable: true },
     httpVersionMinor: { value: 1, writable: false, enumerable: true },
     aborted: { value: false, writable: true, enumerable: true },
-    complete: { value: true, writable: false, enumerable: true },
+    complete: { value: false, writable: true, enumerable: true },
     socket: {
       value: {
         remoteAddress: "127.0.0.1",
@@ -40,6 +46,11 @@ export function createIncomingMessage(
   };
 
   Object.defineProperties(incomingMessage, props);
+
+  // Mark as complete when stream ends
+  stream.on("end", () => {
+    (incomingMessage as any).complete = true;
+  });
 
   return incomingMessage;
 }
