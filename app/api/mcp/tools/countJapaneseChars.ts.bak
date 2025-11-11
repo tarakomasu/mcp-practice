@@ -28,7 +28,10 @@ export const countJapaneseCharsToolConfig = {
   },
 };
 
-export async function countJapaneseCharsHandler({ text }: { text: string }) {
+export async function countJapaneseCharsHandler(
+  {text}: {text: string}
+) {
+  const { text } = extra.params as { text: string };
   const count = countJapaneseGraphemes(text);
   const result = {
     count,

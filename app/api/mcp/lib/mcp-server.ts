@@ -136,7 +136,7 @@ export function createMcpServer(): McpServer {
     {
       title: countJapaneseCharsToolConfig.title,
       description: countJapaneseCharsToolConfig.description,
-      inputSchema: countJapaneseCharsToolConfig.inputSchema,
+      inputSchema: countJapaneseCharsToolConfig.inputSchema as any,
       annotations: countJapaneseCharsToolConfig.annotations,
     },
 
@@ -156,8 +156,12 @@ export function createMcpServer(): McpServer {
      * - データベースクエリ
      * - ファイルI/O
      * などの非同期処理が可能
+     *
+     * ラッパー関数を使用してSDKの型とツールハンドラーの型を橋渡し
      */
-    countJapaneseCharsHandler
+    async (extra: any) => {
+      return countJapaneseCharsHandler(extra.params);
+    }
   );
 
   /**
