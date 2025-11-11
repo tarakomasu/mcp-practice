@@ -12,20 +12,12 @@ export function createIncomingMessage(
   });
 
   const bodyString = body ? JSON.stringify(body) : "";
-  const bodyBuffer = Buffer.from(bodyString, "utf-8");
 
-  let pushed = false;
+  // Use Readable.from() to create a proper async iterable stream
+  // This ensures SDK can use for-await-of to read the stream
+  const incomingMessage = Readable.from([bodyString]) as IncomingMessage;
 
-  const incomingMessage = new Readable({
-    read() {
-      if (!pushed) {
-        this.push(bodyBuffer);
-        this.push(null);
-        pushed = true;
-      }
-    },
-  }) as IncomingMessage;
-
+  // Add required HTTP properties
   Object.assign(incomingMessage, {
     headers,
     method: req.method,
@@ -39,7 +31,9 @@ export function createIncomingMessage(
     socket: {
       remoteAddress: "127.0.0.1",
       remotePort: 0,
+      encrypted: false,
     },
+    connection: null,
   });
 
   return incomingMessage;

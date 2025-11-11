@@ -177,6 +177,7 @@ export async function POST(req: NextRequest) {
       method: body.method,
       hasParams: !!body.params,
     });
+    console.log("📋 Full request body:", JSON.stringify(body, null, 2));
 
     /**
      * ステップ2: リクエストタイプの判定とルーティング
@@ -338,9 +339,21 @@ export async function POST(req: NextRequest) {
       const incomingMessage = createIncomingMessage(req, body);
       const { response, getResponse } = createServerResponse();
 
+      console.log("🔍 IncomingMessage properties:", {
+        readable: incomingMessage.readable,
+        method: incomingMessage.method,
+        hasAsyncIterator:
+          typeof (incomingMessage as any)[Symbol.asyncIterator] === "function",
+      });
+
       console.log("📤 Calling transport.handleRequest...");
-      await transport.handleRequest(incomingMessage, response);
-      console.log("✅ transport.handleRequest completed");
+      try {
+        await transport.handleRequest(incomingMessage, response);
+        console.log("✅ transport.handleRequest completed");
+      } catch (error) {
+        console.error("❌ Error in transport.handleRequest:", error);
+        throw error;
+      }
 
       console.log("🔄 Converting to Next.js response...");
       const nextResponse = await getResponse();
